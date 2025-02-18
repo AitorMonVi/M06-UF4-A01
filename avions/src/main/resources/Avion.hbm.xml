@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+    <class name="com.iticbcn.aitormontejo.model.Avion" table="Avion">
+        <id name="idAvion" column="idAvion">
+            <generator class="identity"/>
+        </id>
+        <property column="Modelo" name="modelo" not-null="true"/>
+        <property column="Capacidad" name="capacidad" not-null="true"/>
+        <set name="vuelos" inverse="true" cascade="save-update" fetch="join" lazy="false">
+            <key column="idAvion"/>
+            <one-to-many class="com.iticbcn.aitormontejo.model.Vuelo"/>
+        </set>
+    </class>
+</hibernate-mapping>
