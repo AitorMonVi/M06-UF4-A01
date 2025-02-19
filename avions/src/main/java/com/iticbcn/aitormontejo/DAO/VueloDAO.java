@@ -1,12 +1,11 @@
 package com.iticbcn.aitormontejo.DAO;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.hibernate.HibernateException;
-import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.exception.ConstraintViolationException;
 
 import com.iticbcn.aitormontejo.Entrada;
 import com.iticbcn.aitormontejo.Main;
@@ -15,16 +14,14 @@ import com.iticbcn.aitormontejo.model.Avion;
 import com.iticbcn.aitormontejo.model.Piloto;
 import com.iticbcn.aitormontejo.model.Vuelo;
 
-public class VueloDAO {
-    
-    private SessionFactory factory;
+public class VueloDAO extends GenDAOImpl<Vuelo> {
 
     private AeropuertoDAO aeropuertoDAO;
     private AvionDAO avionDAO;
     private PilotoDAO pilotoDAO;
 
     public VueloDAO(SessionFactory factory) {
-        this.factory  = factory;
+        super(factory, Vuelo.class);
 
         this.aeropuertoDAO = new AeropuertoDAO(factory);
         this.avionDAO = new AvionDAO(factory);
@@ -61,51 +58,44 @@ public class VueloDAO {
 
     public Vuelo save() {
         Vuelo vuelo = new Vuelo();
-        Session session = factory.openSession();
 
         try {
-            session.beginTransaction();
-
             System.out.println("Rellena la siguiente información para poder crear el vuelo");
             System.out.println("¿Cual es el id del aeropuerto de origen?");
             Aeropuerto origen = aeropuertoDAO.findByID(false);
 
-            if (origen!=null) vuelo.setOrigen(session.merge(origen));
+            if (origen!=null) vuelo.setOrigen(origen);
             else return null;
 
             System.out.println("¿Cual es el id del aeropuerto de destino?");
             Aeropuerto destino = aeropuertoDAO.findByID(false);
 
-            if (destino!=null) vuelo.setDestino(session.merge(destino));
+            if (destino!=null) vuelo.setDestino(destino);
             else return null;
 
             System.out.println("¿Cual es el id del avion que realizara el vuelo?");
             Avion avion = avionDAO.findByID(false);
 
-            if (avion!=null) vuelo.setAvion(session.merge(avion));
+            if (avion!=null) vuelo.setAvion(avion);
             else return null;
             
             System.out.println("¿Cual es el id del piloto del vuelo?");
             Piloto piloto = pilotoDAO.findByID(false);
 
-            if (piloto!=null) vuelo.setPiloto(session.merge(piloto));            
+            if (piloto!=null) vuelo.setPiloto(piloto);
             else return null;
 
-            session.persist(vuelo);
-
-            session.getTransaction().commit();
+            super.save(vuelo);
 
             System.out.println("¡Vuelo creado con éxito!");
             return vuelo;
 
+        } catch (ConstraintViolationException e) {
+            e.printStackTrace();
         } catch (HibernateException e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
         } catch (Exception e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
-        } finally {
-            session.close();
         }
 
         return null;
@@ -135,7 +125,7 @@ public class VueloDAO {
                 case "3" : { return findByDestino(); }
                 case "4" : { return findByAvion(); }
                 case "5" : { return findByPiloto(); }
-                case "6" : { return findAll(); }
+                case "6" : { return new HashSet<>(super.getAll()); }
 
                 default : { System.out.println("Opción no válida!"); }
             }
@@ -145,13 +135,11 @@ public class VueloDAO {
     }
 
     public Vuelo findByID() {
-        Session session = factory.openSession();
-
         try {
             System.out.println("¿Cual es el id del vuelo que quieres mostrar?");
             int id = askId();
 
-            Vuelo vuelo = session.get(Vuelo.class, id);
+            Vuelo vuelo = super.get(id);
 
             if (vuelo!=null) return vuelo;
             else System.out.println("No existe ningun vuelo con ese ID");
@@ -160,8 +148,6 @@ public class VueloDAO {
             e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            session.close();
         }
         
         return null;
@@ -195,81 +181,42 @@ public class VueloDAO {
         return piloto.getVuelos();
     }
 
-    public Set<Vuelo> findAll() {
-        List<Vuelo> lista;
-        Set<Vuelo> vuelos = null;
-        Session session = factory.openSession();
-
-        try {
-            
-            lista = session.createQuery("FROM Vuelo", Vuelo.class).list();
-
-            vuelos = new HashSet<>(lista);
-
-        } catch (HibernateException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            session.close();
-        }
-        
-        return vuelos;
-    }
-
     public Vuelo update() {
-        Session session = factory.openSession();
-
         try {
             System.out.println("Rellena la siguiente información para poder modificar el vuelo");
             System.out.println("¿Cual es el id del vuelo que quieres modificar?");
             int id = askId();
             
-            Vuelo vuelo = session.get(Vuelo.class, id);
+            Vuelo vuelo = super.get(id);
             
             if (vuelo!=null) {
-                session.beginTransaction();
-
                 System.out.println("Datos actuales - " + vuelo);
 
                 System.out.println("¿Cual es el id del nuevo aeropuerto de origen?");
                 Aeropuerto origen = aeropuertoDAO.findByID(false);
 
-                if (origen!=null) {
-                    session.merge(origen);
-                    vuelo.setOrigen(origen);
-                }
+                if (origen!=null) vuelo.setOrigen(origen);
                 else return null;
 
                 System.out.println("¿Cual es el id del nuevo aeropuerto de destino?");
                 Aeropuerto destino = aeropuertoDAO.findByID(false);
 
-                if (destino!=null) {
-                    session.merge(destino);
-                    vuelo.setDestino(destino);
-                }
+                if (destino!=null) vuelo.setDestino(destino);
                 else return null;
 
                 System.out.println("¿Cual es el id del nuevo avion que realizara el vuelo?");
                 Avion avion = avionDAO.findByID(false);
 
-                if (avion!=null) {
-                    session.merge(avion);
-                    vuelo.setAvion(avion);
-                }
+                if (avion!=null) vuelo.setAvion(avion);
                 else return null;
                 
                 System.out.println("¿Cual es el id del nuevo piloto del vuelo?");
                 Piloto piloto = pilotoDAO.findByID(false);
 
-                if (piloto!=null) {
-                    session.merge(piloto);   
-                    vuelo.setPiloto(piloto);
-                }
+                if (piloto!=null) vuelo.setPiloto(piloto);
                 else return null;
     
-                session.merge(vuelo);
-                session.getTransaction().commit();
+                super.update(vuelo);
     
                 System.out.println("Vuelo modificado con éxito!");
 
@@ -277,50 +224,40 @@ public class VueloDAO {
 
             } else System.out.println("No existe ningun vuelo con ese ID");
 
+        } catch (ConstraintViolationException e) {
+            e.printStackTrace();
         } catch (HibernateException e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
         }catch (Exception e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
-        } finally {
-            session.close();
         }
 
         return null;
     }
 
     public Vuelo delete() {
-        Session session = factory.openSession();
-
         try {
             System.out.println("Rellena la siguiente información para poder eliminar el vuelo");
             System.out.println("¿Cual es el id del vuelo que quieres eliminar?");
             int id = askId();
             
-            Vuelo vuelo = session.get(Vuelo.class, id);
+            Vuelo vuelo = super.get(id);
             
             if (vuelo!=null) {
-                session.beginTransaction();
-    
-                session.remove(vuelo);
-
-                session.getTransaction().commit();
+                
+                super.delete(vuelo);
                 
                 System.out.println("¡Vuelo eliminado con éxito!");
-
                 return vuelo;
 
             } else System.out.println("No existe ningun vuelo con ese ID");
 
+        } catch (ConstraintViolationException e) {
+            e.printStackTrace();
         } catch (HibernateException e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
         } catch (Exception e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
-        } finally {
-            session.close();
         }
 
         return null;

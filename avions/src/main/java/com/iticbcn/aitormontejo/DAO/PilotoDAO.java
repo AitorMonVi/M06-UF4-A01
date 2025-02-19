@@ -11,12 +11,13 @@ import com.iticbcn.aitormontejo.Entrada;
 import com.iticbcn.aitormontejo.Main;
 import com.iticbcn.aitormontejo.model.Piloto;
 
-public class PilotoDAO {
+public class PilotoDAO extends GenDAOImpl<Piloto> {
     
     private SessionFactory factory;
 
     public PilotoDAO(SessionFactory factory) {
-        this.factory  = factory;
+        super(factory, Piloto.class);
+        this.factory = factory;
     }
 
     public void execute(String option) {
@@ -53,11 +54,8 @@ public class PilotoDAO {
 
     public Piloto save() {
         Piloto piloto = new Piloto();
-        Session session = factory.openSession();
 
         try {
-            session.beginTransaction();
-
             System.out.println("Rellena la siguiente información para poder crear el piloto");
             System.out.println("¿Cual es el nombre del piloto?");
             piloto.setNombre(Entrada.readLine());
@@ -68,24 +66,19 @@ public class PilotoDAO {
             System.out.println("¿Cual es el telefono del piloto?");
             piloto.setTelefono(Entrada.readLine());
 
-            session.persist(piloto);
-
-            session.getTransaction().commit();
+            super.save(piloto);
 
             System.out.println("Piloto creado con éxito!");
             return piloto;
 
+        } catch (ConstraintViolationException e) {
+            e.printStackTrace();
         } catch (HibernateException e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
         } catch (IllegalArgumentException e) {
-            session.getTransaction().rollback();
             System.out.println(e.getMessage());
         } catch (Exception e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
-        } finally {
-            session.close();
         }
 
         return null;
@@ -113,7 +106,7 @@ public class PilotoDAO {
                 case "2" : { return findByNombre(); }
                 case "3" : { return findByPasaporte(); }
                 case "4" : { return findByTelefono(); }
-                case "5" : { return findAll(); }
+                case "5" : { return super.getAll(); }
 
                 default : { System.out.println("Opción no válida!"); }
             }
@@ -123,13 +116,11 @@ public class PilotoDAO {
     }
 
     public Piloto findByID(boolean show) {
-        Session session = factory.openSession();
-
         try {
             if (show) System.out.println("¿Cual es el id del piloto que quieres mostrar?");
             int id = askId();
             
-            Piloto piloto = session.get(Piloto.class, id);
+            Piloto piloto = super.get(id);
             
             if (piloto!=null) return piloto;
             else System.out.println("No existe ningun piloto con ese ID");
@@ -138,8 +129,6 @@ public class PilotoDAO {
             e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            session.close();
         }
 
         return null;
@@ -214,39 +203,16 @@ public class PilotoDAO {
         return pilotos;
     }
 
-    public List<Piloto> findAll() {
-        List<Piloto> pilotos = null;
-        Session session = factory.openSession();
-
-        try {
-
-            pilotos = session.createQuery("FROM Piloto", Piloto.class).list();
-
-        } catch (HibernateException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            session.close();
-        }
-        
-        return pilotos;
-    }
-
     public Piloto update() {
-        Session session = factory.openSession();
-
         try {
             System.out.println("Rellena la siguiente información para poder modificar el piloto");
             System.out.println("¿Cual es el id del piloto que quieres modificar?");
             
             int id = askId();
             
-            Piloto piloto = session.get(Piloto.class, id);
+            Piloto piloto = super.get(id);
             
             if (piloto!=null) {
-                session.beginTransaction();
-
                 System.out.println("Datos actuales - " + piloto);
 
                 System.out.println("¿Cual es el nuevo nombre del piloto?");
@@ -258,47 +224,38 @@ public class PilotoDAO {
                 System.out.println("¿Cual es el nuevo telefono del piloto?");
                 piloto.setTelefono(Entrada.readLine());
     
-                session.merge(piloto);
-                session.getTransaction().commit();
+                super.update(piloto);
     
                 System.out.println("¡Piloto modificado con éxito!");
                 return piloto;
 
             } else System.out.println("No existe ningun piloto con ese ID");
 
+        } catch (ConstraintViolationException e) {
+            e.printStackTrace();
         } catch (HibernateException e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
         } catch (IllegalArgumentException e) {
-            session.getTransaction().rollback();
             System.out.println(e.getMessage());
         } catch (Exception e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
-        } finally {
-            session.close();
         }
 
         return null;
     }
 
     public Piloto delete() {
-        Session session = factory.openSession();
-
         try {
             System.out.println("Rellena la siguiente información para poder eliminar el piloto");
             System.out.println("¿Cual es el id del piloto que quieres eliminar?");
             
             int id = askId();
             
-            Piloto piloto = session.get(Piloto.class, id);
+            Piloto piloto = super.get(id);
             
             if (piloto!=null) {
-                session.beginTransaction();
-    
-                session.remove(piloto);
 
-                session.getTransaction().commit();
+                super.delete(piloto);
     
                 System.out.println("¡Piloto eliminado con éxito!");
                 return piloto;
@@ -306,16 +263,11 @@ public class PilotoDAO {
             } else System.out.println("No existe ningun piloto con ese ID");
 
         } catch (ConstraintViolationException e) {
-            session.getTransaction().rollback();
             System.out.println("No puedes eliminar este piloto porque está asociado a vuelos.");
         } catch (HibernateException e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
         } catch (Exception e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
-        } finally {
-            session.close();
         }
 
         return null;

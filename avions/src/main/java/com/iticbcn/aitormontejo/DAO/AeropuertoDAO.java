@@ -11,12 +11,13 @@ import com.iticbcn.aitormontejo.Entrada;
 import com.iticbcn.aitormontejo.Main;
 import com.iticbcn.aitormontejo.model.Aeropuerto;
 
-public class AeropuertoDAO {
+public class AeropuertoDAO extends GenDAOImpl<Aeropuerto> {
 
     private SessionFactory factory;
 
     public AeropuertoDAO(SessionFactory factory) {
-        this.factory  = factory;
+        super(factory, Aeropuerto.class);
+        this.factory = factory;
     }
 
     public void execute(String option) {
@@ -53,37 +54,26 @@ public class AeropuertoDAO {
 
     public Aeropuerto save() {
         Aeropuerto aeropuerto = new Aeropuerto();
-        Session session = factory.openSession();
 
         try {
-            session.beginTransaction();
-
             System.out.println("Rellena la siguiente información para poder crear el aeropuerto");
             System.out.println("¿En que ciudad se encuentra el aeropuerto?");
             
             aeropuerto.setCiudad(Entrada.readLine());
 
-            session.persist(aeropuerto);
-
-            session.getTransaction().commit();
+            super.save(aeropuerto);
 
             System.out.println("¡Aeropuerto creado con éxito!");
             return aeropuerto;
 
         } catch (ConstraintViolationException e) {
-            session.getTransaction().rollback();
             System.out.println("¡Ya existe un aeropuerto en esta ciudad!");
         } catch (HibernateException e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
         } catch (IllegalArgumentException e) {
-            session.getTransaction().rollback();
             System.out.println("¡La ciudad que has pasado no es válida!");
         } catch (Exception e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
-        } finally {
-            session.close();
         }
 
         return null;
@@ -107,7 +97,7 @@ public class AeropuertoDAO {
                     return null;
                 }
                 case "2" : { return findByCiudad(); }
-                case "3" : { return findAll(); }
+                case "3" : { return super.getAll(); }
 
                 default : { System.out.println("Opción no válida!"); }
             }
@@ -117,13 +107,12 @@ public class AeropuertoDAO {
     }
 
     public Aeropuerto findByID(boolean show) {
-        Session session = factory.openSession();
 
         try {
             if (show) System.out.println("¿Cual es el id del aeropuerto que quieres mostrar?");
             int id = askId();
 
-            Aeropuerto aeropuerto = session.get(Aeropuerto.class, id);
+            Aeropuerto aeropuerto = super.get(id);
 
             if (aeropuerto!=null) return aeropuerto;
             else System.out.println("No existe ningun aeropuerto con ese ID");
@@ -132,8 +121,6 @@ public class AeropuertoDAO {
             e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            session.close();
         }
         
         return null;
@@ -162,107 +149,65 @@ public class AeropuertoDAO {
         return aeropuertos;
     }
 
-    public List<Aeropuerto> findAll() {
-        List<Aeropuerto> aeropuertos = null;
-        Session session = factory.openSession();
-
-        try {
-            
-            aeropuertos = session.createQuery("FROM Aeropuerto", Aeropuerto.class).list();
-
-        } catch (HibernateException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            session.close();
-        }
-        
-        return aeropuertos;
-    }
-
     public Aeropuerto update() {
-        Session session = factory.openSession();
-
         try {
             System.out.println("Rellena la siguiente información para poder modificar el aeropuerto");
             System.out.println("¿Cual es el id del aeropuerto que quieres modificar?");
             
             int id = askId();
             
-            Aeropuerto aeropuerto = session.get(Aeropuerto.class, id);
+            Aeropuerto aeropuerto = super.get(id);
             
             if (aeropuerto!=null) {
-                session.beginTransaction();
-
                 System.out.println("Datos actuales - " + aeropuerto);
 
                 System.out.println("¿Cual es la nueva ciudad del aeropuerto?");
                 aeropuerto.setCiudad(Entrada.readLine());
     
-                session.merge(aeropuerto);
-                session.getTransaction().commit();
+                super.update(aeropuerto);
     
                 System.out.println("¡Aeropuerto modificado con éxito!");
-
                 return aeropuerto;
 
             } else System.out.println("No existe ningun aeropuerto con ese ID");
 
         } catch (ConstraintViolationException e) {
-            session.getTransaction().rollback();
             System.out.println("¡Ya existe un aeropuerto en esta ciudad!");
         } catch (HibernateException e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
         } catch (IllegalArgumentException e) {
-            session.getTransaction().rollback();
             System.out.println("¡La ciudad que has pasado no es válida!");
         } catch (Exception e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
-        } finally {
-            session.close();
         }
 
         return null;
     }
 
     public Aeropuerto delete() {
-        Session session = factory.openSession();
-
         try {
             System.out.println("Rellena la siguiente información para poder eliminar el aeropuerto");
             System.out.println("¿Cual es el id del aeropuerto que quieres eliminar?");
             
             int id = askId();
             
-            Aeropuerto aeropuerto = session.get(Aeropuerto.class, id);
+            Aeropuerto aeropuerto = super.get(id);
             
             if (aeropuerto!=null) {
-                session.beginTransaction();
-    
-                session.remove(aeropuerto);
 
-                session.getTransaction().commit();
+                super.delete(aeropuerto);
     
                 System.out.println("¡Aeropuerto eliminado con éxito!");
-
                 return aeropuerto;
 
             } else System.out.println("No existe ningun aeropuerto con ese ID");
 
         } catch (ConstraintViolationException e) {
-            session.getTransaction().rollback();
             System.out.println("No puedes eliminar este aeropuerto porque está asociado a vuelos.");
         } catch (HibernateException e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
         } catch (Exception e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
-        } finally {
-            session.close();
         }
 
         return null;

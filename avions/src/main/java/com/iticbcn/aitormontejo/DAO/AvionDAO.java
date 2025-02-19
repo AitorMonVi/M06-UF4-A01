@@ -11,12 +11,13 @@ import com.iticbcn.aitormontejo.Entrada;
 import com.iticbcn.aitormontejo.Main;
 import com.iticbcn.aitormontejo.model.Avion;
 
-public class AvionDAO {
+public class AvionDAO extends GenDAOImpl<Avion> {
     
     private SessionFactory factory;
 
     public AvionDAO(SessionFactory factory) {
-        this.factory  = factory;
+        super(factory, Avion.class);
+        this.factory = factory;
     }
 
     public void execute(String option) {
@@ -53,11 +54,8 @@ public class AvionDAO {
 
     public Avion save() {
         Avion avion = new Avion();
-        Session session = factory.openSession();
 
         try {
-            session.beginTransaction();
-
             System.out.println("Rellena la siguiente información para poder crear el avion");
             System.out.println("¿Que modelo es el avion?");
             avion.setModelo(Entrada.readLine());
@@ -65,24 +63,19 @@ public class AvionDAO {
             System.out.println("¿Cual es la capacidad del avion?");
             avion.setCapacidad(askCapacidad());
 
-            session.persist(avion);
-
-            session.getTransaction().commit();
+            super.save(avion);
 
             System.out.println("Avion creado con éxito!");
             return avion;
 
+        } catch (ConstraintViolationException e) {
+            e.printStackTrace();
         } catch (HibernateException e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
         } catch (IllegalArgumentException e) {
-            session.getTransaction().rollback();
             System.out.println(e.getMessage());
         } catch (Exception e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
-        } finally {
-            session.close();
         }
 
         return null;
@@ -109,7 +102,7 @@ public class AvionDAO {
                 }
                 case "2" : { return findByModelo(); }
                 case "3" : { return findByCapacidad(); }
-                case "4" : { return findAll(); }
+                case "4" : { return super.getAll(); }
                 case "5" : {
                     System.out.println("La capacidad conjunta de todos los aviones es: " + showMaxCapacidad());
                     return null;
@@ -123,13 +116,12 @@ public class AvionDAO {
     }
 
     public Avion findByID(boolean show) {
-        Session session = factory.openSession();
 
         try {
             if (show) System.out.println("¿Cual es el id del avion que quieres mostrar?");
             int id = askId();
             
-            Avion avion = session.get(Avion.class, id);
+            Avion avion = super.get(id);
             
             if (avion!=null) return avion;
             else System.out.println("No existe ningun avion con ese ID");
@@ -138,8 +130,6 @@ public class AvionDAO {
             e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            session.close();
         }
 
         return null;
@@ -191,25 +181,6 @@ public class AvionDAO {
         return avions;
     }
 
-    public List<Avion> findAll() {
-        List<Avion> avions = null;
-        Session session = factory.openSession();
-
-        try {
-            
-            avions = session.createQuery("FROM Avion", Avion.class).list();
-
-        } catch (HibernateException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            session.close();
-        }
-
-        return avions;
-    }
-
     public Long showMaxCapacidad() {
         Long suma = 0L;
         Session session = factory.openSession();
@@ -228,19 +199,15 @@ public class AvionDAO {
     }
 
     public Avion update() {
-        Session session = factory.openSession();
-
         try {
             System.out.println("Rellena la siguiente información para poder modificar el avion");
             System.out.println("¿Cual es el id del avion que quieres modificar?");
             
             int id = askId();
             
-            Avion avion = session.get(Avion.class, id);
+            Avion avion = super.get(id);
             
             if (avion!=null) {
-                session.beginTransaction();
-
                 System.out.println("Datos actuales - " + avion);
 
                 System.out.println("¿Cual es el nuevo modelo del avion?");
@@ -249,63 +216,50 @@ public class AvionDAO {
                 System.out.println("¿Cual es la nueva capacidad del avion?");
                 avion.setCapacidad(askCapacidad());
     
-                session.getTransaction().commit();
+                super.update(avion);
     
                 System.out.println("¡Avion modificado con éxito!");
                 return avion;
 
             } else System.out.println("No existe ningun avion con ese ID");
 
+        } catch (ConstraintViolationException e) {
+            e.printStackTrace();
         } catch (HibernateException e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
         } catch (IllegalArgumentException e) {
-            session.getTransaction().rollback();
             System.out.println(e.getMessage());
         } catch (Exception e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
-        } finally {
-            session.close();
         }
 
         return null;
     }
 
     public Avion delete() {
-        Session session = factory.openSession();
-
         try {
             System.out.println("Rellena la siguiente información para poder eliminar el avion");
             System.out.println("¿Cual es el id del avion que quieres eliminar?");
             
             int id = askId();
             
-            Avion avion = session.get(Avion.class, id);
+            Avion avion = super.get(id);
             
             if (avion!=null) {
-                session.beginTransaction();
     
-                session.remove(avion);
+                super.delete(avion);
 
-                session.getTransaction().commit();
-    
                 System.out.println("¡Avion eliminado con éxito!");
                 return avion;
 
             } else System.out.println("No existe ningun avion con ese ID");
 
         } catch (ConstraintViolationException e) {
-            session.getTransaction().rollback();
             System.out.println("No puedes eliminar este avión porque está asociado a vuelos.");
         } catch (HibernateException e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
         } catch (Exception e) {
-            session.getTransaction().rollback();
             e.printStackTrace();
-        } finally {
-            session.close();
         }
 
         return null;
