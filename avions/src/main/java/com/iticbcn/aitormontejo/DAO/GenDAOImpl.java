@@ -7,6 +7,11 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.exception.ConstraintViolationException;
 
+import com.iticbcn.aitormontejo.model.Aeropuerto;
+import com.iticbcn.aitormontejo.model.Avion;
+import com.iticbcn.aitormontejo.model.Piloto;
+import com.iticbcn.aitormontejo.model.Vuelo;
+
 public abstract class GenDAOImpl<T> implements GenDAO<T> {
     // propiedades
     private SessionFactory factory;
@@ -25,6 +30,13 @@ public abstract class GenDAOImpl<T> implements GenDAO<T> {
 
         try {
             session.beginTransaction();
+
+            if (entity instanceof Vuelo vuelo) {
+                vuelo.setAvion(session.get(Avion.class, vuelo.getAvion().getIdAvion()));
+                vuelo.setPiloto(session.get(Piloto.class, vuelo.getPiloto().getId()));
+                vuelo.setOrigen(session.get(Aeropuerto.class, vuelo.getOrigen().getId()));
+                vuelo.setDestino(session.get(Aeropuerto.class, vuelo.getDestino().getId()));
+            }
 
             session.persist(entity);
 
